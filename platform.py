@@ -31,9 +31,10 @@ class WizionuttxPlatform(PlatformBase):
         filepath = join( dirname( __file__ ), 'builder', 'frameworks', 'install.py' )
         if exists( filepath ):
             SourceFileLoader(
-                'module_' +  str(abs(hash(filepath))), 
-                filepath).load_module().dev_install(
+                    'module_' +  str(abs(hash(filepath))), 
+                    filepath
+                ).load_module().dev_install( 
                     join(self.config.get('platformio', 'core_dir'), 'packages', FRAMEWORK_NAME),
-                self.packages[FRAMEWORK_NAME].get('git'),
-                mode 
-            )
+                    self.packages[FRAMEWORK_NAME].get('git'),
+                    mode 
+                )
