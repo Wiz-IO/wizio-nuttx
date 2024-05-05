@@ -1,2 +1,3 @@
-# wizio-nuttx
-WizIO - NuttX - PlatformIO
+# WizIO - NuttX - PlatformIO
+
+# Do not install !!!
