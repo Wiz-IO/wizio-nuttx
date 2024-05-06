@@ -4,7 +4,7 @@
 import click
 from os.path import join
 from SCons.Script import (AlwaysBuild,Default,DefaultEnvironment,Builder,COMMAND_LINE_TARGETS)
-from frameworks.common import INTEGRATION, dev_init
+from frameworks.common import INTEGRATION, dev_init, dev_run_menuconfig
 from frameworks.wiz import ERROR
 print('[MAIN] START', COMMAND_LINE_TARGETS ) #['__idedata'],['menuconfig'],['upload'],[]
 
@@ -22,8 +22,8 @@ env.CHIP             = env.BoardConfig().get("build.chip")  # 'stm32'
 
 click.secho('\n<<< NUTTX - PLATFORMIO WizIO 2024 Georgi Angelov >>>\n', fg='blue')
 
-def cb_menuconfig(*args, **kwargs): # TODO 
-    print( 'RUN MENUCONFIG' )
+def cb_menuconfig(*args, **kwargs): 
+    dev_run_menuconfig(env)
 env.AddCustomTarget('menuconfig', None, cb_menuconfig, title = "MENUCONFIG", description = "Edit Project .config" )
 
 dev_init(env) # INIT COMPILER

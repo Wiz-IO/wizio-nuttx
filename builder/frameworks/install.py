@@ -1,7 +1,7 @@
 '''
     Copyright 2024 WizIO ( Georgi Angelov )
 '''
-import sys, time
+import os, sys, time
 from os.path import join, exists, normpath, dirname
 from platformio import proc
 sys.path.append( dirname( __file__ ) )
@@ -33,6 +33,14 @@ def install_nuttx(url, dir):
         RMDIR( dir )
         ERROR('[GIT] Please, try later, result = %d' % res)
     print(' * Cloning took %s seconds' % int( time.time() - begin ) )
+    with open( join(dir, 'arch',  'dummy','Kconfig'), "w" ) as f: pass
+    with open( join(dir, 'boards','dummy','Kconfig'), "w" ) as f: pass 
+    path = join(dir, 'drivers','platform')
+    os.makedirs(path, exist_ok=True)
+    with open( join(path,'Kconfig'), "w" ) as f: pass 
+    path = join(dir, 'apps')
+    os.makedirs(path, exist_ok=True)
+    with open( join(path,'Kconfig'), "w" ) as f: pass     
 
 def dev_install(var, url):
     ENV = FRAMEWORK_DIR = var
@@ -46,4 +54,5 @@ def dev_install(var, url):
         install_python_requirements()
     dir = join( FRAMEWORK_DIR, 'nuttx' )
     if not exists( dir ): 
-        install_nuttx( url, dir )    
+        install_nuttx( url, dir ) 
+ 
