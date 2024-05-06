@@ -138,7 +138,7 @@ def dev_run_menuconfig(env):
     ]
     os.environ['KCONFIG_PROJECT_CONFIG_DIR'] = os.getcwd()
     os.environ['KCONFIG_CONFIG'] = join(os.getcwd(), '.config')
-    os.environ['ARCH']        = 'ARCH_BOARD_STM32F3_DISCOVERY'
+    os.environ['ARCH']        = env.ARCH
     os.environ['APPSDIR']     = './apps'
     os.environ['APPSBINDIR']  = './apps'
     os.environ['BINDIR']      = '.'
