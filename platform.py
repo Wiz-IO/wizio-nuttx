@@ -19,22 +19,21 @@ class WizionuttxPlatform(PlatformBase):
         return board
 
     def get_package_type(self, name):
-        Type = self.packages[name].get('type')
-        if 'framework' == Type:
-            self.install(1) # wiz.MODE_INTEGRATE
-        return Type
+        T = self.packages[name].get('type')
+        if 'framework' == T:
+            self.install()
+        return T
 
     def on_installed(self):
-        self.install(0) # wiz.MODE_INSTALL
+        self.install()
 
-    def install(self, mode):
+    def install(self):
         filepath = join( dirname( __file__ ), 'builder', 'frameworks', 'install.py' )
         if exists( filepath ):
             SourceFileLoader(
-                    'module_' +  str(abs(hash(filepath))), 
+                    'module_' +  str( abs( hash( filepath ) ) ), 
                     filepath
                 ).load_module().dev_install( 
                     join(self.config.get('platformio', 'core_dir'), 'packages', FRAMEWORK_NAME),
-                    self.packages[FRAMEWORK_NAME].get('git'),
-                    mode 
+                    self.packages[FRAMEWORK_NAME].get('nuttx'),
                 )
