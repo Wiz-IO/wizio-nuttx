@@ -1,13 +1,12 @@
 '''
     Copyright 2024 WizIO ( Georgi Angelov )
 '''
-from SCons.Script import (DefaultEnvironment,COMMAND_LINE_TARGETS)
-from frameworks.common import INTEGRATION
+from os.path import join
+from SCons.Script import DefaultEnvironment
+from frameworks.common import INTEGRATION, dev_config
 from frameworks.wiz import ERROR
+env = DefaultEnvironment()
 
 if not INTEGRATION():
-    print('[BUILD] START', COMMAND_LINE_TARGETS) #[]
-
-    env = DefaultEnvironment()
-
-    print('[BUILD] END')
+    dev_config(env)
+    env.SConscript( join(env.platform_dir, 'scons', 'scons') , exports=['env'] )

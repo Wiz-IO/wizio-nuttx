@@ -6,7 +6,6 @@ from os.path import join
 from SCons.Script import (AlwaysBuild,Default,DefaultEnvironment,Builder,COMMAND_LINE_TARGETS)
 from frameworks.common import INTEGRATION, dev_init, dev_run_menuconfig
 from frameworks.wiz import ERROR
-print('[MAIN] START', COMMAND_LINE_TARGETS ) #['__idedata'],['menuconfig'],['upload'],[]
 
 PLATFORM_NAME        = 'wizio-nuttx'
 FRAMEWORK_NAME       = 'framework-' + PLATFORM_NAME
@@ -20,7 +19,7 @@ env.NSH              = env.BoardConfig().get("build.nsh")   # 'stm32f3discovery:
 env.ARCH             = env.BoardConfig().get("build.arch")  # 'arm'
 env.CHIP             = env.BoardConfig().get("build.chip")  # 'stm32'
 
-click.secho('\n<<< NUTTX - PLATFORMIO WizIO 2024 Georgi Angelov >>>\n', fg='blue')
+click.secho('<<< NUTTX - PLATFORMIO WizIO 2024 Georgi Angelov >>>', fg='blue')
 
 def cb_menuconfig(*args, **kwargs): 
     dev_run_menuconfig(env)
@@ -48,6 +47,5 @@ if not INTEGRATION():
     AlwaysBuild( hex, bin )
     Default( hex, bin )
 
-print('[MAIN] END')
 # print(env.Dump())
 

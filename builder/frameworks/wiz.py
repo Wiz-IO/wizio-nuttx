@@ -3,7 +3,7 @@
 '''
 
 import os, sys, shutil, time, click, inspect
-from os.path import exists
+from os.path import join, exists
 
 PLATFORM_NAME  = 'wizio-nuttx'
 FRAMEWORK_NAME = 'framework-' + PLATFORM_NAME
@@ -39,19 +39,24 @@ def RMDIR(dir):
         if timeout == 0: 
             ERROR('Delete folder: %s' % dir)
 
+def CPDIR(src, dst, ext = '.h'):
+    files = [f for f in os.listdir(src) if os.path.isfile(os.path.join(src, f)) and f.endswith(ext)]
+    for f in files:
+        shutil.copy(join(src, f), dst)
+
 ### MAKEFILE ###
 
 def DEF(env, key):
-    return key in env.config
+    return key in env.CONFIG
 
 def EQU(env, key, val='y'): # and NOT 0
    if DEF(env, key): 
-      return env.config[key] != '0' and env.config[key] == val
+      return env.CONFIG[key] != '0' and env.CONFIG[key] == val
    return False            
 
 def GET(env, key, dequote=True):
    if DEF(env, key): 
-      return env.config[key] if dequote==False else env.config[key].replace('"', '')
+      return env.CONFIG[key] if dequote==False else env.CONFIG[key].replace('"', '')
    ERROR('Config key [%s] not found' % key)
 
 def FILTER_ADD(env, path):
@@ -78,10 +83,10 @@ def FILTER_APPLY(env, conditions):
         elif val == 'I' and key == '':      env.Append( CPPPATH = [list] ) # -I no KEY  
         elif val == ''  and key == '': 
             ADD(list) # add required source files 
-        elif key in env.config:
-            if val == 0 and env.config[key] != 0:
+        elif key in env.CONFIG:
+            if val == 0 and env.CONFIG[key] != 0:
                 ADD(list)    
-            elif val == env.config[key]:
+            elif val == env.CONFIG[key]:
                 ADD(list)                                         
             elif val == '': # IFDEF(KEY)
                 ADD(list)

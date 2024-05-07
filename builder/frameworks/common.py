@@ -7,50 +7,57 @@ from shutil import copyfile
 from datetime import datetime
 from SCons.Script import (COMMAND_LINE_TARGETS)
 from platformio import proc
-from frameworks.wiz import ERROR
+from frameworks.wiz import MKDIR, CPDIR, ERROR, GET, EQU
 
 def INTEGRATION():
-    return any(p in COMMAND_LINE_TARGETS for p in ['__idedata', 'menuconfig'])
+    return any(p in COMMAND_LINE_TARGETS for p in ['__idedata', 'idedata', 'menuconfig'])
 
-def dev_init_template(env):
-    if not exists('.config'):
-        #boards\arm\stm32\stm32f3discovery\configs\nsh
-        dir = join(env.framework_dir, 'nuttx', 'boards', env.ARCH, env.CHIP, env.BOARD, 'configs', env.NSH)
-        copyfile(join(dir, 'defconfig'),'.config')
-     # TODO CREATE TEMPLATE MAIN.C
-    pass
+def load_config(env):
+    env.CONFIG = {}
+    if not exists('.config'): 
+        ERROR('Provect .config not exists')
+    lines = open('.config', 'r').readlines()
+    for line in lines:
+        line = line.strip()
+        if line.startswith('#') or len(line) < 3: continue
+        var, val = line.split("=")
+        env.CONFIG[var.strip()] = val.strip()
+    #arch\arm
+    env.DIR_ARCH = join(env.DIR_NUTTX, 'arch', GET(env, 'CONFIG_ARCH')) 
+    #print('DIR_ARCH\t', env.DIR_ARCH)
 
-def dev_init(env):
-    env.Replace(
-        BUILD_DIR = env.subst('$BUILD_DIR'),
-        ARFLAGS         = ['rc'],
-        ASFLAGS         = ['-x', 'assembler-with-cpp', '-D__ASSEMBLY__'],           
-        CPPDEFINES      = ['__NuttX__'],
-        CPPPATH         = [],
-        CFLAGS          = [],
-        CCFLAGS         = [],
-        CXXFLAGS        = [],
-        LIBS            = [],
-        LINKFLAGS       = ['-nostartfiles','-nodefaultlibs','-nostdlib', ], 
-        LIBPATH        = [join('$PROJECT_DIR', 'lib')],
-        LIBSOURCE_DIRS = [join('$PROJECT_DIR', 'lib')],        
-        PROGSUFFIX      = '.elf',       
-    )
-    if 'arm' == env.ARCH:
-        env.Replace(
-            AR          = 'arm-none-eabi-ar',
-            AS          = 'arm-none-eabi-as',
-            CC          = 'arm-none-eabi-gcc',
-            GDB         = 'arm-none-eabi-gdb',
-            CXX         = 'arm-none-eabi-g++',
-            OBJCOPY     = 'arm-none-eabi-objcopy',
-            RANLIB      = 'arm-none-eabi-ranlib',
-            SIZETOOL    = 'arm-none-eabi-size',
-    )
-    else: ERROR('Unsupported Architecture')
+    #arch\arm\include
+    env.DIR_ARCH_INC = join(env.DIR_ARCH, 'include')
+    #print('DIR_ARCH_INC\t', env.DIR_ARCH_INC)
 
-    env.DIR_SCONS = join(env.platform_dir, 'scons')
-    env.DIR_NUTTX = join(env.framework_dir, 'nuttx')
+    #arch\arm\src
+    env.DIR_ARCH_SRC = join(env.DIR_ARCH, 'src')
+    #print('DIR_ARCH_SRC\t', env.DIR_ARCH_SRC)
+
+    #arch\arm\include\armv7-m
+    env.DIR_FAMILY_INC = join(env.DIR_ARCH_INC, GET(env, 'CONFIG_ARCH_FAMILY'))
+    #print('DIR_FAMILY_INC\t', env.DIR_FAMILY_INC)
+
+    #arch\arm\src\armv7-m
+    env.DIR_FAMILY_SRC = join(env.DIR_ARCH_SRC, GET(env, 'CONFIG_ARCH_FAMILY'))
+    #print('DIR_FAMILY_SRC\t', env.DIR_FAMILY_SRC)
+
+    #arch\arm\include\stm32 (-I)
+    env.DIR_CHIP_INC = join(env.DIR_ARCH_INC, GET(env, 'CONFIG_ARCH_CHIP'))
+    #print('DIR_CHIP_INC\t', env.DIR_CHIP_INC)
+
+    #arch\arm\src\stm32 (-I)
+    env.DIR_CHIP_SRC = join(env.DIR_ARCH_SRC, GET(env, 'CONFIG_ARCH_CHIP'))
+    #print('DIR_CHIP_SRC\t', env.DIR_CHIP_SRC)
+
+    #arch\arm\src\common
+    env.DIR_COMMON_SRC = join(env.DIR_ARCH_SRC, 'common')
+    #print('DIR_COMMON_SRC\t', env.DIR_COMMON_SRC)
+
+    #boards\arm\stm32\stm32f3discovery
+    env.DIR_BOARD = join(env.framework_dir, 'nuttx', 'boards', GET(env, 'CONFIG_ARCH'), 
+        GET(env, 'CONFIG_ARCH_CHIP'), GET(env, 'CONFIG_ARCH_BOARD'))
+    #print('DIR_BOARD\t', env.DIR_BOARD)
 
 def create_config_h(env):
     dequote_list = [
@@ -129,7 +136,23 @@ def create_config_h(env):
 "#  define CONFIG_FLASH_END (CONFIG_FLASH_START+CONFIG_FLASH_SIZE)\n"
 "#endif\n\n"
 "#endif /* __INCLUDE_NUTTX_CONFIG_H */\n")
-    copyfile( join(env.framework_dir, 'nuttx', '.config'), join( env.subst('$PROJECT_DIR'), 'config', '.config' ) )
+
+def create_include(env): 
+    arch = join('include', 'arch')
+    MKDIR(arch)
+    CPDIR(env.DIR_ARCH_INC, arch)
+    dst = join(arch, 'chip' )
+    MKDIR(dst)
+    CPDIR(env.DIR_CHIP_INC, dst)
+    dst = join(arch, GET(env, 'CONFIG_ARCH_CHIP') )
+    MKDIR(dst)
+    CPDIR(env.DIR_CHIP_INC, dst)
+    dst = join(arch, GET(env, 'CONFIG_ARCH_FAMILY'))
+    MKDIR(dst)
+    CPDIR(env.DIR_FAMILY_INC, dst)
+    dst = join(arch, 'board' )
+    MKDIR(dst)
+    CPDIR(join(env.DIR_BOARD, 'include'), dst)
 
 def dev_run_menuconfig(env):  
     args = [
@@ -147,4 +170,73 @@ def dev_run_menuconfig(env):
         stdout = sys.stdout, stderr = sys.stderr, stdin = sys.stdin, cwd = env.DIR_NUTTX) 
     if 0 == res['returncode']: 
         create_config_h(env)
+
+def dev_config(env):
+    if not exists('.config'):
+        copyfile(
+            join(env.framework_dir, 'nuttx', 'boards', env.ARCH, env.CHIP, env.BOARD, 'configs', env.NSH, 'defconfig'),
+            '.config' )
+    if exists(join('src', 'main.c')): pass 
+    elif exists(join('src', 'main.cpp')): pass
+    else:
+        open(join('src', 'main.c'), 'w').write(
+'''
+/* PlatformIO Template */
+
+#include <nuttx/config.h>
+#include <stdio.h>
+
+int main(int argc, FAR char *argv[])
+{
+  printf("Hello, World");
+  return 0;
+}''')
+    if not exists(join('include', 'nuttx', 'config.h')):
+        create_config_h(env)
+    env.Replace(LDSCRIPT_PATH= join(
+        join(env.framework_dir, 'nuttx', 'boards', env.ARCH, env.CHIP, env.BOARD,'scripts', 'ld.script')) )
+    load_config(env)
+    create_include(env)
+    env.Append(
+        CPPPATH = [ 
+            join('$PROJECT_DIR', 'lib'),
+            join('$PROJECT_DIR', 'src'), 
+        ]
+    )    
+
+def dev_init(env):
+    env.Replace(
+        BUILD_DIR = env.subst('$BUILD_DIR'),
+        ARFLAGS         = ['rc'],
+        ASFLAGS         = ['-x', 'assembler-with-cpp', '-D__ASSEMBLY__'],           
+        CPPDEFINES      = ['__NuttX__'],
+        CPPPATH         = [
+            join('$PROJECT_DIR', 'include'),
+            join(env.framework_dir, 'nuttx', 'include'),  
+            join(env.framework_dir, 'nuttx', 'sched'),          
+        ],
+        CFLAGS          = [],
+        CCFLAGS         = [],
+        CXXFLAGS        = [],
+        LIBS            = [],
+        LINKFLAGS       = ['-nostartfiles','-nodefaultlibs','-nostdlib', ], 
+        LIBPATH         = [join('$PROJECT_DIR', 'lib')],
+        LIBSOURCE_DIRS  = [join('$PROJECT_DIR', 'lib')],        
+        PROGSUFFIX      = '.elf',       
+    )
+    if 'arm' == env.ARCH:
+        env.Replace(
+            AR          = 'arm-none-eabi-ar',
+            AS          = 'arm-none-eabi-as',
+            CC          = 'arm-none-eabi-gcc',
+            GDB         = 'arm-none-eabi-gdb',
+            CXX         = 'arm-none-eabi-g++',
+            OBJCOPY     = 'arm-none-eabi-objcopy',
+            RANLIB      = 'arm-none-eabi-ranlib',
+            SIZETOOL    = 'arm-none-eabi-size',
+    )
+    else: ERROR('Unsupported Architecture')
+
+    env.DIR_SCONS = join(env.platform_dir, 'scons')
+    env.DIR_NUTTX = join(env.framework_dir, 'nuttx')
 

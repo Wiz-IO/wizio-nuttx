@@ -1,0 +1,27 @@
+'''
+    Copyright 2024 (c) WizIO ( Georgi Angelov )
+    *** ARCH ***
+'''
+from os.path import join
+from frameworks.wiz import GET
+Import('env')
+clone = env.Clone()
+clone.FILTER = ['-<*>']
+clone.SConscript( 
+    join(clone.DIR_SCONS, GET(clone, 'CONFIG_ARCH'), 'common'), 
+    exports=['env','clone'] 
+)
+clone.SConscript( 
+    join(clone.DIR_SCONS, GET(clone, 'CONFIG_ARCH'), GET(clone, 'CONFIG_ARCH_FAMILY')), 
+    exports=['env','clone'] 
+)
+clone.SConscript( 
+    join(clone.DIR_SCONS, GET(clone, 'CONFIG_ARCH'), GET(clone, 'CONFIG_ARCH_CHIP')), 
+    exports=['env','clone'] 
+)
+lib = clone.BuildLibrary( 
+    join('$BUILD_DIR', 'nuttx', 'arch'), 
+    join(clone.DIR_NUTTX, 'arch'),
+    src_filter = clone.FILTER 
+)
+env.Append( LIBS = lib )
