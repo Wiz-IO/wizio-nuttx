@@ -9,4 +9,4 @@ env = DefaultEnvironment()
 
 if not INTEGRATION():
     dev_config(env)
-    env.SConscript( join(env.platform_dir, 'scons', 'scons') , exports=['env'] )
+    env.SConscript( join(env.platform_dir, 'scons', 'arch.py') , exports=['env'] )

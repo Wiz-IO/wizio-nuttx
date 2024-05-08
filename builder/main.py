@@ -3,19 +3,17 @@
 '''
 import click
 from os.path import join
-from SCons.Script import (AlwaysBuild,Default,DefaultEnvironment,Builder,COMMAND_LINE_TARGETS)
+from SCons.Script import (AlwaysBuild,Default,DefaultEnvironment,Builder)
 from frameworks.common import INTEGRATION, dev_init, dev_run_menuconfig
-from frameworks.wiz import ERROR
+from frameworks.wiz import FRAMEWORK_NAME
 
-PLATFORM_NAME        = 'wizio-nuttx'
-FRAMEWORK_NAME       = 'framework-' + PLATFORM_NAME
 env                  = DefaultEnvironment()
 platform             = env.PioPlatform()
 board                = env.BoardConfig()
 env['PLATFORM_DIR' ] = env.platform_dir  = env.PioPlatform().get_dir()
 env['FRAMEWORK_DIR'] = env.framework_dir = env.PioPlatform().get_package_dir( FRAMEWORK_NAME )
-env.BOARD            = env.BoardConfig().get("build.board") # 'stm32f3discovery:nsh'
-env.NSH              = env.BoardConfig().get("build.nsh")   # 'stm32f3discovery:nsh'
+env.BOARD            = env.BoardConfig().get("build.board") # 'stm32f3discovery'
+env.NSH              = env.BoardConfig().get("build.nsh")   # 'nsh'
 env.ARCH             = env.BoardConfig().get("build.arch")  # 'arm'
 env.CHIP             = env.BoardConfig().get("build.chip")  # 'stm32'
 

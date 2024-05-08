@@ -58,6 +58,7 @@ def load_config(env):
     env.DIR_BOARD = join(env.framework_dir, 'nuttx', 'boards', GET(env, 'CONFIG_ARCH'), 
         GET(env, 'CONFIG_ARCH_CHIP'), GET(env, 'CONFIG_ARCH_BOARD'))
     #print('DIR_BOARD\t', env.DIR_BOARD)
+    pass # TODO cortex
 
 def create_config_h(env):
     dequote_list = [
@@ -172,10 +173,9 @@ def dev_run_menuconfig(env):
         create_config_h(env)
 
 def dev_config(env):
+    board_dir = join(env.framework_dir, 'nuttx', 'boards', env.ARCH, env.CHIP, env.BOARD)
     if not exists('.config'):
-        copyfile(
-            join(env.framework_dir, 'nuttx', 'boards', env.ARCH, env.CHIP, env.BOARD, 'configs', env.NSH, 'defconfig'),
-            '.config' )
+        copyfile( join(board_dir, 'configs', env.NSH, 'defconfig'), '.config' )
     if exists(join('src', 'main.c')): pass 
     elif exists(join('src', 'main.cpp')): pass
     else:
@@ -193,8 +193,7 @@ int main(int argc, FAR char *argv[])
 }''')
     if not exists(join('include', 'nuttx', 'config.h')):
         create_config_h(env)
-    env.Replace(LDSCRIPT_PATH= join(
-        join(env.framework_dir, 'nuttx', 'boards', env.ARCH, env.CHIP, env.BOARD,'scripts', 'ld.script')) )
+    env.Replace( LDSCRIPT_PATH = join(board_dir, 'scripts', 'ld.script') )
     load_config(env)
     create_include(env)
     env.Append(
@@ -237,6 +236,6 @@ def dev_init(env):
     )
     else: ERROR('Unsupported Architecture')
 
-    env.DIR_SCONS = join(env.platform_dir, 'scons')
+    env.DIR_SCONS = join(env.platform_dir,  'scons')
     env.DIR_NUTTX = join(env.framework_dir, 'nuttx')
 

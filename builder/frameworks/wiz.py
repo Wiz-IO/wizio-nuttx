@@ -8,9 +8,6 @@ from os.path import join, exists
 PLATFORM_NAME  = 'wizio-nuttx'
 FRAMEWORK_NAME = 'framework-' + PLATFORM_NAME
 
-MODE_INSTALL   = 0
-MODE_INTEGRATE = 1
-
 def LOG(txt = ''):
     txt = '[] %s() %s' % (inspect.stack()[1][3], txt)
     #open('D:/PIO-NUTTX-LOG.txt', 'a+').write(txt + '\n')
@@ -23,7 +20,7 @@ def ERROR(txt = ''):
     sys.exit(-1)
 
 def INFO(txt): 
-    click.secho( '   %s' % (txt), fg='blue') # BUG: Windows: 4 same chars
+    click.secho('   %s' % (txt), fg='blue') # BUG: Windows: 4 same chars
 
 def MKDIR(dir): 
     if dir and not exists(dir): 

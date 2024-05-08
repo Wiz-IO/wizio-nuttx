@@ -12,10 +12,18 @@
         "chip"   : "stm32"
     },
   
-    "debug": { },
+    "debug": {
+      "default_tools"   : [ "stlink" ],
+      "onboard_tools"   : [ "stlink" ],      
+      "jlink_device"    : "STM32F303VCT6",
+      "openocd_target"  : "stm32f3x",
+      "svd_path"        : "STM32F303x.svd"
+    },
   
     "upload": {
-      "maximum_ram_size"  : 0,
-      "maximum_size"      : 0
+      "maximum_ram_size"  :   40960,
+      "maximum_size"      :  262144,
+      "protocol"          : "stlink",
+      "protocols"         : [ "jlink", "stlink", "stlinkv1" ] 
     }
   }
