@@ -1,7 +1,6 @@
 '''
     Copyright 2024 WizIO ( Georgi Angelov )
 '''
-
 import os, sys, shutil, time, click, inspect
 from os.path import join, exists
 
@@ -15,7 +14,7 @@ def LOG(txt = ''):
 
 def ERROR(txt = ''):
     txt = '%s() %s' % (inspect.stack()[1][3], txt)
-    click.secho( '[ERROR] %s \n' % txt, fg='red') 
+    click.secho( '[ERROR] %s\n' % txt, fg='red')
     time.sleep(.1)
     sys.exit(-1)
 
@@ -58,8 +57,14 @@ def GET(env, key, dequote=True):
 
 def FILTER_ADD(env, path):
     if isinstance(path, list):
-        env.FILTER.extend(['+<%s>' % p for p in path])
+        #env.FILTER.extend(['+<%s>' % p for p in path])
+        for p in path:
+            if not exists(p): 
+                ERROR('(LIST) File not found:\n%s' % p)
+            env.FILTER.append('+<%s>' % p)
     elif isinstance(path, str):
+        if not exists(path): 
+            ERROR('(STRING) File not found:\n%s' % path)
         env.FILTER.append('+<%s>' % path)
     else:
         ERROR('FILTER_ADD: %s' % print(type(path)))
