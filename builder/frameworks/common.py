@@ -55,7 +55,7 @@ def load_config(env):
     #print('DIR_COMMON_SRC\t', env.DIR_COMMON_SRC)
 
     #boards\arm\stm32\stm32f3discovery
-    env.DIR_BOARD = join(env.framework_dir, 'nuttx', 'boards', GET(env, 'CONFIG_ARCH'), 
+    env.DIR_BOARD = join(env.DIR_NUTTX, 'boards', GET(env, 'CONFIG_ARCH'), 
         GET(env, 'CONFIG_ARCH_CHIP'), GET(env, 'CONFIG_ARCH_BOARD'))
     #print('DIR_BOARD\t', env.DIR_BOARD)
     pass # TODO cortex
@@ -172,8 +172,8 @@ def dev_run_menuconfig(env):
     if 0 == res['returncode']: 
         create_config_h(env)
 
-def dev_config(env):
-    board_dir = join(env.framework_dir, 'nuttx', 'boards', env.ARCH, env.CHIP, env.BOARD)
+def dev_begin(env):
+    board_dir = join(env.DIR_NUTTX, 'boards', env.ARCH, env.CHIP, env.BOARD)
     if not exists('.config'):
         copyfile( join(board_dir, 'configs', env.NSH, 'defconfig'), '.config' )
     if exists(join('src', 'main.c')): pass 
@@ -195,13 +195,15 @@ int main(int argc, FAR char *argv[])
         create_config_h(env)
     env.Replace( LDSCRIPT_PATH = join(board_dir, 'scripts', 'ld.script') )
     load_config(env)
-    create_include(env)
+    create_include(env)  
+
+def dev_end(env):
     env.Append(
         CPPPATH = [ 
             join('$PROJECT_DIR', 'lib'),
             join('$PROJECT_DIR', 'src'), 
         ]
-    )    
+    ) 
 
 def dev_init(env):
     env.Replace(
@@ -211,8 +213,8 @@ def dev_init(env):
         CPPDEFINES      = ['__NuttX__'],
         CPPPATH         = [
             join('$PROJECT_DIR', 'include'),
-            join(env.framework_dir, 'nuttx', 'include'),  
-            join(env.framework_dir, 'nuttx', 'sched'),          
+            join(env.DIR_NUTTX, 'include'),  
+            join(env.DIR_NUTTX, 'sched'),          
         ],
         CFLAGS          = [],
         CCFLAGS         = [],
@@ -235,7 +237,3 @@ def dev_init(env):
             SIZETOOL    = 'arm-none-eabi-size',
     )
     else: ERROR('Unsupported Architecture')
-
-    env.DIR_SCONS = join(env.platform_dir,  'scons')
-    env.DIR_NUTTX = join(env.framework_dir, 'nuttx')
-
