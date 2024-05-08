@@ -15,7 +15,7 @@ def INTEGRATION():
 def load_config(env):
     env.CONFIG = {}
     if not exists('.config'): 
-        ERROR('Provect .config not exists')
+        ERROR('Project ".config" not exists')
     lines = open('.config', 'r').readlines()
     for line in lines:
         line = line.strip()
@@ -24,41 +24,31 @@ def load_config(env):
         env.CONFIG[var.strip()] = val.strip()
     #arch\arm
     env.DIR_ARCH = join(env.DIR_NUTTX, 'arch', GET(env, 'CONFIG_ARCH')) 
-    #print('DIR_ARCH\t', env.DIR_ARCH)
 
     #arch\arm\include
     env.DIR_ARCH_INC = join(env.DIR_ARCH, 'include')
-    #print('DIR_ARCH_INC\t', env.DIR_ARCH_INC)
 
     #arch\arm\src
     env.DIR_ARCH_SRC = join(env.DIR_ARCH, 'src')
-    #print('DIR_ARCH_SRC\t', env.DIR_ARCH_SRC)
 
     #arch\arm\include\armv7-m
     env.DIR_FAMILY_INC = join(env.DIR_ARCH_INC, GET(env, 'CONFIG_ARCH_FAMILY'))
-    #print('DIR_FAMILY_INC\t', env.DIR_FAMILY_INC)
 
     #arch\arm\src\armv7-m
     env.DIR_FAMILY_SRC = join(env.DIR_ARCH_SRC, GET(env, 'CONFIG_ARCH_FAMILY'))
-    #print('DIR_FAMILY_SRC\t', env.DIR_FAMILY_SRC)
 
-    #arch\arm\include\stm32 (-I)
+    #arch\arm\include\stm32
     env.DIR_CHIP_INC = join(env.DIR_ARCH_INC, GET(env, 'CONFIG_ARCH_CHIP'))
-    #print('DIR_CHIP_INC\t', env.DIR_CHIP_INC)
 
     #arch\arm\src\stm32 (-I)
     env.DIR_CHIP_SRC = join(env.DIR_ARCH_SRC, GET(env, 'CONFIG_ARCH_CHIP'))
-    #print('DIR_CHIP_SRC\t', env.DIR_CHIP_SRC)
 
     #arch\arm\src\common
     env.DIR_COMMON_SRC = join(env.DIR_ARCH_SRC, 'common')
-    #print('DIR_COMMON_SRC\t', env.DIR_COMMON_SRC)
 
     #boards\arm\stm32\stm32f3discovery
     env.DIR_BOARD = join(env.DIR_NUTTX, 'boards', GET(env, 'CONFIG_ARCH'), 
         GET(env, 'CONFIG_ARCH_CHIP'), GET(env, 'CONFIG_ARCH_BOARD'))
-    #print('DIR_BOARD\t', env.DIR_BOARD)
-    pass # TODO cortex
 
 def create_config_h(env):
     dequote_list = [
@@ -66,7 +56,7 @@ def create_config_h(env):
 "CONFIG_DEBUG_OPTLEVEL",                # Custom debug level
 "CONFIG_EXECFUNCS_NSYMBOLS_VAR",        # Variable holding number of symbols in the table
 "CONFIG_EXECFUNCS_SYMTAB_ARRAY",        # Symbol table array used by exec[l|v]
-"CONFIG_INIT_ARGS",                     # Argument list of entry point
+"CONFIG_INIT_ARGS",                     # Argument list of entry point ... "\"-c\", \"ostest;poweroff\""
 "CONFIG_INIT_SYMTAB",                   # Global symbol table
 "CONFIG_INIT_NEXPORTS",                 # Global symbol table size
 "CONFIG_INIT_ENTRYPOINT",               # Name of entry point function
@@ -89,8 +79,7 @@ def create_config_h(env):
 "CONFIG_NSH_SYMTAB_ARRAYNAME",          # Symbol table array name
 "CONFIG_NSH_SYMTAB_COUNTNAME",          # Name of the variable holding the number of symbols
     ]
-
-    dir = join( env.subst('$PROJECT_DIR'), 'include', 'nuttx' )
+    dir = join('include', 'nuttx')
     if dir and not exists(dir): 
         os.makedirs(dir, exist_ok=True)
     w = open(join( dir, 'config.h' ), 'w')
@@ -110,7 +99,8 @@ def create_config_h(env):
         var = var.strip()
         val = val.strip()
         if var in dequote_list: 
-            val = val.replace('"', '')
+            val = val[1:-1].replace('\',') # TODO CHECK "\"-c\", \"ostest;poweroff\""
+            if val == '': continue
         if val == 'y':
             w.write("#define %s 1\n" % var)
         elif val == 'n':
@@ -198,31 +188,29 @@ int main(int argc, FAR char *argv[])
     create_include(env)  
 
 def dev_end(env):
-    env.Append(
-        CPPPATH = [ 
-            join('$PROJECT_DIR', 'lib'),
-            join('$PROJECT_DIR', 'src'), 
-        ]
-    ) 
+    env.Append( CPPPATH = [ 
+        join('$PROJECT_DIR', 'lib'),
+        join('$PROJECT_DIR', 'src'),
+    ] ) 
 
 def dev_init(env):
     env.Replace(
         BUILD_DIR = env.subst('$BUILD_DIR'),
         ARFLAGS         = ['rc'],
         ASFLAGS         = ['-x', 'assembler-with-cpp', '-D__ASSEMBLY__'],           
-        CPPDEFINES      = ['__NuttX__'],
+        CPPDEFINES      = ['__NuttX__', '__KERNEL__'],
         CPPPATH         = [
             join('$PROJECT_DIR', 'include'),
-            join(env.DIR_NUTTX, 'include'),  
-            join(env.DIR_NUTTX, 'sched'),          
+            join(env.DIR_NUTTX,  'include'),  
+            join(env.DIR_NUTTX,  'sched'),          
         ],
         CFLAGS          = [],
         CCFLAGS         = [],
         CXXFLAGS        = [],
         LIBS            = [],
         LINKFLAGS       = ['-nostartfiles','-nodefaultlibs','-nostdlib', ], 
-        LIBPATH         = [join('$PROJECT_DIR', 'lib')],
-        LIBSOURCE_DIRS  = [join('$PROJECT_DIR', 'lib')],        
+        LIBPATH         = ['lib'],
+        LIBSOURCE_DIRS  = ['lib'],        
         PROGSUFFIX      = '.elf',       
     )
     if 'arm' == env.ARCH:
