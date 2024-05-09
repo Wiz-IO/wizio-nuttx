@@ -7,50 +7,15 @@ from shutil import copyfile
 from datetime import datetime
 from SCons.Script import (COMMAND_LINE_TARGETS)
 from platformio import proc
-from frameworks.wiz import MKDIR, CPDIR, ERROR, GET, EQU
+from frameworks.wiz import MKDIR, CPDIR, ERROR, GET
 
 def INTEGRATION():
     return any(p in COMMAND_LINE_TARGETS for p in ['__idedata', 'idedata', 'menuconfig'])
 
-def load_config(env):
-    env.CONFIG = {}
-    if not exists('.config'): 
-        ERROR('Project ".config" not exists')
-    lines = open('.config', 'r').readlines()
-    for line in lines:
-        line = line.strip()
-        if line.startswith('#') or len(line) < 3: continue
-        var, val = line.split("=")
-        env.CONFIG[var.strip()] = val.strip()
-    #arch\arm
-    env.DIR_ARCH = join(env.DIR_NUTTX, 'arch', GET(env, 'CONFIG_ARCH')) 
+#################################################
 
-    #arch\arm\include
-    env.DIR_ARCH_INC = join(env.DIR_ARCH, 'include')
-
-    #arch\arm\src
-    env.DIR_ARCH_SRC = join(env.DIR_ARCH, 'src')
-
-    #arch\arm\include\armv7-m
-    env.DIR_FAMILY_INC = join(env.DIR_ARCH_INC, GET(env, 'CONFIG_ARCH_FAMILY'))
-
-    #arch\arm\src\armv7-m
-    env.DIR_FAMILY_SRC = join(env.DIR_ARCH_SRC, GET(env, 'CONFIG_ARCH_FAMILY'))
-
-    #arch\arm\include\stm32
-    env.DIR_CHIP_INC = join(env.DIR_ARCH_INC, GET(env, 'CONFIG_ARCH_CHIP'))
-
-    #arch\arm\src\stm32 (-I)
-    env.DIR_CHIP_SRC = join(env.DIR_ARCH_SRC, GET(env, 'CONFIG_ARCH_CHIP'))
-
-    #arch\arm\src\common
-    env.DIR_COMMON_SRC = join(env.DIR_ARCH_SRC, 'common')
-
-    #boards\arm\stm32\stm32f3discovery
-    env.DIR_BOARD = join(env.DIR_NUTTX, 'boards', GET(env, 'CONFIG_ARCH'), 
-        GET(env, 'CONFIG_ARCH_CHIP'), GET(env, 'CONFIG_ARCH_BOARD'))
-
-def create_config_h(env):
+def create_config():
+    if exists( join('include', 'nuttx', 'config.h') ): return
     dequote_list = [
 # NuttX        
 "CONFIG_DEBUG_OPTLEVEL",                # Custom debug level
@@ -128,6 +93,64 @@ def create_config_h(env):
 "#endif\n\n"
 "#endif /* __INCLUDE_NUTTX_CONFIG_H */\n")
 
+def dev_run_menuconfig(env):  
+    args = [
+        proc.get_pythonexe_path(),
+        join(env.platform_dir, 'builder', 'frameworks', 'x_menuconfig.py')
+    ]
+    os.environ['KCONFIG_PROJECT_CONFIG_DIR'] = os.getcwd()
+    os.environ['KCONFIG_CONFIG'] = join(os.getcwd(), '.config')
+    os.environ['ARCH']        = env.ARCH
+    os.environ['APPSDIR']     = './apps'
+    os.environ['APPSBINDIR']  = './apps'
+    os.environ['BINDIR']      = '.'
+    os.environ['EXTERNALDIR'] = './arch/dummy'
+    res = proc.exec_command( args, 
+        stdout = sys.stdout, stderr = sys.stderr, stdin = sys.stdin, cwd = env.DIR_NUTTX) 
+    if 0 == res['returncode']: 
+        create_config()
+
+#################################################
+
+def load_config(env):
+    env.CONFIG = {}
+    if not exists('.config'): 
+        ERROR('Project ".config" not exists')
+    lines = open('.config', 'r').readlines()
+    for line in lines:
+        line = line.strip()
+        if line.startswith('#') or len(line) < 3: continue
+        var, val = line.split("=")
+        env.CONFIG[var.strip()] = val.strip()
+
+    #arch\arm
+    env.DIR_ARCH = join(env.DIR_NUTTX, 'arch', GET(env, 'CONFIG_ARCH')) 
+
+    #arch\arm\include
+    env.DIR_ARCH_INC = join(env.DIR_ARCH, 'include')
+
+    #arch\arm\src
+    env.DIR_ARCH_SRC = join(env.DIR_ARCH, 'src')
+
+    #arch\arm\include\armv7-m
+    env.DIR_FAMILY_INC = join(env.DIR_ARCH_INC, GET(env, 'CONFIG_ARCH_FAMILY'))
+
+    #arch\arm\src\armv7-m
+    env.DIR_FAMILY_SRC = join(env.DIR_ARCH_SRC, GET(env, 'CONFIG_ARCH_FAMILY'))
+
+    #arch\arm\include\stm32
+    env.DIR_CHIP_INC = join(env.DIR_ARCH_INC, GET(env, 'CONFIG_ARCH_CHIP'))
+
+    #arch\arm\src\stm32 (-I)
+    env.DIR_CHIP_SRC = join(env.DIR_ARCH_SRC, GET(env, 'CONFIG_ARCH_CHIP'))
+
+    #arch\arm\src\common
+    env.DIR_COMMON_SRC = join(env.DIR_ARCH_SRC, 'common')
+
+    #boards\arm\stm32\stm32f3discovery
+    env.DIR_BOARD = join(env.DIR_NUTTX, 'boards', GET(env, 'CONFIG_ARCH'), 
+        GET(env, 'CONFIG_ARCH_CHIP'), GET(env, 'CONFIG_ARCH_BOARD'))
+
 def create_include(env): 
     arch = join('include', 'arch')
     MKDIR(arch)
@@ -145,27 +168,45 @@ def create_include(env):
     MKDIR(dst)
     CPDIR(join(env.DIR_BOARD, 'include'), dst)
 
-def dev_run_menuconfig(env):  
-    args = [
-        proc.get_pythonexe_path(),
-        join(env.platform_dir, 'builder', 'frameworks', 'x_menuconfig.py')
-    ]
-    os.environ['KCONFIG_PROJECT_CONFIG_DIR'] = os.getcwd()
-    os.environ['KCONFIG_CONFIG'] = join(os.getcwd(), '.config')
-    os.environ['ARCH']        = env.ARCH
-    os.environ['APPSDIR']     = './apps'
-    os.environ['APPSBINDIR']  = './apps'
-    os.environ['BINDIR']      = '.'
-    os.environ['EXTERNALDIR'] = './arch/dummy'
-    res = proc.exec_command( args, 
-        stdout = sys.stdout, stderr = sys.stderr, stdin = sys.stdin, cwd = env.DIR_NUTTX) 
-    if 0 == res['returncode']: 
-        create_config_h(env)
+def create_family(env):
+    env.SConscript(
+        join(env.DIR_SCONS, 'arch', env.ARCH, 'Toolchain-%s.py' % GET(env, 'CONFIG_ARCH_FAMILY')), 
+        exports=['env']
+    )
 
-def dev_begin(env):
-    board_dir = join(env.DIR_NUTTX, 'boards', env.ARCH, env.CHIP, env.BOARD)
-    if not exists('.config'):
-        copyfile( join(board_dir, 'configs', env.NSH, 'defconfig'), '.config' )
+def create_version(env):
+    # TODO INIT VERSION
+    env.CONFIG['CONFIG_VERSION_STRING'] = '0.0.0'
+    env.CONFIG['CONFIG_VERSION_MAJOR']  = 0
+    env.CONFIG['CONFIG_VERSION_MINOR']  = 0
+    env.CONFIG['CONFIG_VERSION_PATCH']  = 0
+    env.CONFIG['CONFIG_VERSION_BUILD']  = '0'
+    src = join('include', 'nuttx', 'version.h')
+    if not exists(src):
+        open(src, 'w').write(
+'''
+/* version.h -- PlatformIO Autogenerated! Do not edit. */\n
+#ifndef __INCLUDE_NUTTX_VERSION_H
+#define __INCLUDE_NUTTX_VERSION_H
+
+#define CONFIG_VERSION_STRING   "%s"
+#define CONFIG_VERSION_MAJOR    %s
+#define CONFIG_VERSION_MINOR    %s
+#define CONFIG_VERSION_PATCH    %s
+#define CONFIG_VERSION_BUILD    "%s"
+
+#define CONFIG_VERSION ((CONFIG_VERSION_MAJOR << 16) |\\
+                        (CONFIG_VERSION_MINOR << 8) |\\
+                        (CONFIG_VERSION_PATCH))\n
+#endif /* __INCLUDE_NUTTX_VERSION_H */''' % (
+            env.CONFIG['CONFIG_VERSION_STRING'],
+            env.CONFIG['CONFIG_VERSION_MAJOR'],
+            env.CONFIG['CONFIG_VERSION_MINOR'], 
+            env.CONFIG['CONFIG_VERSION_PATCH'],
+            env.CONFIG['CONFIG_VERSION_BUILD']
+        ) )
+
+def create_main(env):
     if exists(join('src', 'main.c')): pass 
     elif exists(join('src', 'main.cpp')): pass
     else:
@@ -180,14 +221,23 @@ int main(int argc, FAR char *argv[])
 {
   printf("Hello, World");
   return 0;
-}''')
-    if not exists(join('include', 'nuttx', 'config.h')):
-        create_config_h(env)
+}''' )
+
+def dev_begin(env):
+    board_dir = join(env.DIR_NUTTX, 'boards', env.ARCH, env.CHIP, env.BOARD)
     env.Replace( LDSCRIPT_PATH = join(board_dir, 'scripts', 'ld.script') )
+    create_main(env)
     load_config(env)
     create_include(env)  
+    create_family(env)
+    create_version(env)
 
 def dev_end(env):
+    ENV = env
+    env.SConscript( # TODO CHECK FOR APPLICATION
+        join(env.DIR_SCONS, 'arch', env.ARCH, 'Toolchain-common.py'), 
+        exports=['ENV']
+    )
     env.Append( CPPPATH = [ 
         join('$PROJECT_DIR', 'lib'),
         join('$PROJECT_DIR', 'src'),
@@ -195,7 +245,7 @@ def dev_end(env):
 
 def dev_init(env):
     env.Replace(
-        BUILD_DIR = env.subst('$BUILD_DIR'),
+        BUILD_DIR       = env.subst('$BUILD_DIR'),
         ARFLAGS         = ['rc'],
         ASFLAGS         = ['-x', 'assembler-with-cpp', '-D__ASSEMBLY__'],           
         CPPDEFINES      = ['__NuttX__', '__KERNEL__'],
@@ -209,8 +259,8 @@ def dev_init(env):
         CXXFLAGS        = [],
         LIBS            = [],
         LINKFLAGS       = ['-nostartfiles','-nodefaultlibs','-nostdlib', ], 
-        LIBPATH         = ['lib'],
-        LIBSOURCE_DIRS  = ['lib'],        
+        LIBPATH         = [join('$PROJECT_DIR', 'lib')],
+        LIBSOURCE_DIRS  = [join('$PROJECT_DIR', 'lib')],        
         PROGSUFFIX      = '.elf',       
     )
     if 'arm' == env.ARCH:

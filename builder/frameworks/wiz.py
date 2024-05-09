@@ -45,54 +45,55 @@ def CPDIR(src, dst, ext = '.h'):
 def DEF(env, key):
     return key in env.CONFIG
 
-def EQU(env, key, val='y'): # and NOT 0
-   if DEF(env, key): 
-      return env.CONFIG[key] != '0' and env.CONFIG[key] == val
-   return False            
+def EQU(env, key, val='y'):
+    if DEF(env, key): 
+        return env.CONFIG[key] == val
+    return False            
 
 def GET(env, key, dequote=True):
    if DEF(env, key): 
       return env.CONFIG[key] if dequote==False else env.CONFIG[key].replace('"', '')
    ERROR('Config key [%s] not found' % key)
 
-def FILTER_ADD(env, path):
+def ADD(env, path):
     if isinstance(path, list):
-        #env.FILTER.extend(['+<%s>' % p for p in path])
         for p in path:
+            p = join(env.CWD, p)
             if not exists(p): 
                 ERROR('(LIST) File not found:\n%s' % p)
             env.FILTER.append('+<%s>' % p)
     elif isinstance(path, str):
+        path = join(env.CWD, path)
         if not exists(path): 
             ERROR('(STRING) File not found:\n%s' % path)
         env.FILTER.append('+<%s>' % path)
     else:
         ERROR('FILTER_ADD: %s' % print(type(path)))
 
-def FILTER_APPLY(env, conditions):
-    def ADD(list):
+def APPLY(env, conditions):
+    def _add(list):
         if 'else' in list:
-            FILTER_ADD(env, list[:list.index('else')])
+            ADD(env, list[:list.index('else')])
         else: 
-            FILTER_ADD(env, list)
-    def ELSE(list):
+            ADD(env, list)
+    def _else(list):
         if 'else' in list:
-            FILTER_ADD(env, list[list.index('else')+1:])           
+            ADD(env, list[list.index('else')+1:])           
     for val, key, *list in conditions:  
         val = val.strip()
         key = key.strip()
         if   val == 'I' and DEF(env, key):  env.Append( CPPPATH = [list] ) # -I if KEY       
         elif val == 'I' and key == '':      env.Append( CPPPATH = [list] ) # -I no KEY  
         elif val == ''  and key == '': 
-            ADD(list) # add required source files 
+            _add(list) # add required source files 
         elif key in env.CONFIG:
-            if val == 0 and env.CONFIG[key] != 0:
-                ADD(list)    
+            if val == '0' and env.CONFIG[key] != '0':
+                _add(list)
             elif val == env.CONFIG[key]:
-                ADD(list)                                         
+                _add(list)                                         
             elif val == '': # IFDEF(KEY)
-                ADD(list)
+                _add(list)
             else: 
-                ELSE(list)            
+                _else(list)            
         else: 
-            ELSE(list)
+            _else(list)

@@ -15,7 +15,6 @@ env['FRAMEWORK_DIR'] = env.framework_dir = env.PioPlatform().get_package_dir( FR
 env.DIR_SCONS        = join(env.platform_dir,  'scons')
 env.DIR_NUTTX        = join(env.framework_dir, 'nuttx')
 env.BOARD            = env.BoardConfig().get("build.board") # 'stm32f3discovery'
-env.NSH              = env.BoardConfig().get("build.nsh")   # 'nsh'
 env.ARCH             = env.BoardConfig().get("build.arch")  # 'arm'
 env.CHIP             = env.BoardConfig().get("build.chip")  # 'stm32'
 
